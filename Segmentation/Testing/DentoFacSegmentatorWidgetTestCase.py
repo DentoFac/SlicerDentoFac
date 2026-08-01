@@ -19,6 +19,11 @@ class DentoFacSegmentatorWidgetTestCase(unittest.TestCase):
         DentoFacSegmentator(parent)
         self.assertFalse(parent.icon.isNull())
 
+    def test_module_declares_its_dentofac_hub_dependency(self):
+        parent = MagicMock()
+        DentoFacSegmentator(parent)
+        self.assertEqual(parent.dependencies, ["DentoFac", "SlicerNNUNet"])
+
     def setUp(self):
         self.parent = slicer.qMRMLWidget()
         self.parent.setMRMLScene(slicer.mrmlScene)
@@ -109,3 +114,8 @@ class DentoFacSegmentatorWidgetTestCase(unittest.TestCase):
         self.assertEqual(sharedTabs.minimumHeight, 31)
         self.assertEqual(sharedTabs.maximumHeight, 16777215)
         self.widget = None
+
+    def test_cleanup_releases_the_embedded_workflow_widget(self):
+        self._setupWithSharedTabs()
+        self.widget.cleanup()
+        self.assertTrue(self.widget.segmentationWidget._isCleanedUp)

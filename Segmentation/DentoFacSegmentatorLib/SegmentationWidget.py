@@ -8,6 +8,7 @@ import time
 import ctk
 import qt
 import slicer
+from slicer.i18n import tr
 
 from .IconPath import icon, iconPath
 from .PythonDependencyChecker import PythonDependencyChecker
@@ -67,7 +68,7 @@ class SegmentationWidget(qt.QWidget):
 
         # Override default segment node selector text to be more explicit than "Select Segmentation"
         segmentationSelectorComboBox = self.segmentationNodeSelector.findChild("ctkComboBox")
-        segmentationSelectorComboBox.defaultText = "Create new Segmentation on Apply"
+        segmentationSelectorComboBox.defaultText = tr("Create new segmentation when applying")
 
         # Create segment editor widget
         self.segmentEditorWidget = slicer.qMRMLSegmentEditorWidget(self)
@@ -84,7 +85,7 @@ class SegmentationWidget(qt.QWidget):
         smoothingSlider = self.show3DButton.findChild("ctkSliderWidget")
         self.surfaceSmoothingSlider = ctk.ctkSliderWidget(self)
         self.surfaceSmoothingSlider.setToolTip(
-            "Higher value means stronger smoothing during closed surface representation conversion."
+            tr("Higher value means stronger smoothing during closed surface representation conversion.")
         )
         self.surfaceSmoothingSlider.decimals = 2
         self.surfaceSmoothingSlider.maximum = 1
@@ -110,28 +111,28 @@ class SegmentationWidget(qt.QWidget):
             "Higher value means stronger reduction (smaller files, less details preserved)."
         )
 
-        exportLayout.addRow("Export STL", self.stlCheckBox)
-        exportLayout.addRow("Export OBJ", self.objCheckBox)
-        exportLayout.addRow("Export NIFTI", self.niftiCheckBox)
-        exportLayout.addRow("Export glTF", self.gltfCheckBox)
-        exportLayout.addRow("glTF reduction factor :", self.reductionFactorSlider)
+        exportLayout.addRow(tr("Export STL"), self.stlCheckBox)
+        exportLayout.addRow(tr("Export OBJ"), self.objCheckBox)
+        exportLayout.addRow(tr("Export NIfTI"), self.niftiCheckBox)
+        exportLayout.addRow(tr("Export glTF"), self.gltfCheckBox)
+        exportLayout.addRow(tr("glTF reduction factor:"), self.reductionFactorSlider)
 
-        self.exportButton = createButton("Export", callback=self.onExportClicked, parent=exportWidget)
+        self.exportButton = createButton(tr("Export"), callback=self.onExportClicked, parent=exportWidget)
         exportLayout.addRow(self.exportButton)
 
         self._lastExportFolder = ""
         self._lastSuccessfulExportFolder = ""
-        self.exportFolderLabel = qt.QLabel("No folder selected yet.")
+        self.exportFolderLabel = qt.QLabel(tr("No folder selected yet."))
         self.exportFolderLabel.setWordWrap(True)
-        exportLayout.addRow("Output folder:", self.exportFolderLabel)
+        exportLayout.addRow(tr("Output folder:"), self.exportFolderLabel)
 
         self.exportResultLabel = qt.QLabel()
         self.exportResultLabel.setWordWrap(True)
         self.exportResultLabel.setVisible(False)
         self.openExportFolderButton = createButton(
-            "Open folder",
+            tr("Open folder"),
             callback=self.onOpenExportFolderClicked,
-            toolTip="Open the folder containing the most recently exported files.",
+            toolTip=tr("Open the folder containing the most recently exported files."),
             parent=exportWidget,
         )
         self.openExportFolderButton.setVisible(False)
@@ -141,7 +142,7 @@ class SegmentationWidget(qt.QWidget):
         exportResultLayout.setContentsMargins(0, 0, 0, 0)
         exportResultLayout.addWidget(self.exportResultLabel, 1)
         exportResultLayout.addWidget(self.openExportFolderButton)
-        exportLayout.addRow("Export result:", exportResultWidget)
+        exportLayout.addRow(tr("Export result:"), exportResultWidget)
 
         layout = qt.QVBoxLayout(self)
 
@@ -151,12 +152,12 @@ class SegmentationWidget(qt.QWidget):
         helpDiagnosticsLayout = qt.QVBoxLayout(self.helpDiagnosticsWidget)
         helpDiagnosticsLayout.setContentsMargins(0, 0, 0, 0)
         self.showLogsButton = createButton(
-            "View activity log", callback=self.showInfoLogs,
-            toolTip="Show the detailed module activity log.", parent=self.helpDiagnosticsWidget,
+            tr("View activity log"), callback=self.showInfoLogs,
+            toolTip=tr("Show the detailed module activity log."), parent=self.helpDiagnosticsWidget,
         )
         self.supportDiagnosticsButton = createButton(
-            "Create support report…", callback=self.onExportDiagnosticsClicked,
-            toolTip="Collect diagnostic information to share with support.", parent=self.helpDiagnosticsWidget,
+            tr("Create support report…"), callback=self.onExportDiagnosticsClicked,
+            toolTip=tr("Collect diagnostic information to share with support."), parent=self.helpDiagnosticsWidget,
         )
         helpDiagnosticsLayout.addWidget(self.showLogsButton)
         helpDiagnosticsLayout.addWidget(self.supportDiagnosticsButton)
@@ -171,7 +172,7 @@ class SegmentationWidget(qt.QWidget):
         statusLayout.addWidget(self.statusVerdictLabel)
 
         self.statusLabels = {}
-        for key in ["NNUNet extension", "Python dependencies (torch, nnunetv2)", "Compute device", "GPU acceleration", "Model weights"]:
+        for key in [tr("NNUNet extension"), tr("Python dependencies (torch, nnunetv2)"), tr("Compute device"), tr("GPU acceleration"), tr("Model weights")]:
             lbl = qt.QLabel()
             lbl.setWordWrap(True)
             self.statusLabels[key] = lbl
@@ -195,14 +196,14 @@ class SegmentationWidget(qt.QWidget):
         self.installProgressWidget.setVisible(False)
         statusLayout.addWidget(self.installProgressWidget)
 
-        self.statusActionButton = createButton("Re-check", callback=self.onStatusActionClicked, parent=statusWidget)
+        self.statusActionButton = createButton(tr("Re-check"), callback=self.onStatusActionClicked, parent=statusWidget)
         statusLayout.addWidget(self.statusActionButton)
 
         # Setup details should be immediately visible until the module is ready.
         # Once configured, retain them behind this compact affordance so the primary
         # scan-and-run workflow is not pushed down the panel.
         self.installationStatusCollapsibleButton = addInCollapsibleLayout(
-            statusWidget, layout, "Installation Status", isCollapsed=False
+            statusWidget, layout, tr("Installation status"), isCollapsed=False
         )
 
         self.inputWidget = qt.QWidget(self)
@@ -213,24 +214,24 @@ class SegmentationWidget(qt.QWidget):
         inputVolumeLayout.setContentsMargins(0, 0, 0, 0)
         inputVolumeLayout.addWidget(self.inputSelector, 1)
         self.loadSampleVolumeButton = createButton(
-            "Load sample volume",
+            tr("Load sample volume"),
             callback=self.onLoadSampleVolumeClicked,
-            toolTip="Download and select the CBCT Dental Surgery sample volume.",
+            toolTip=tr("Download and select the CBCT Dental Surgery sample volume."),
             parent=inputVolumeWidget,
         )
         # This remains a secondary action beside the user's input selector, but it
         # needs a standard button affordance so users recognize it as clickable.
         self.loadSampleVolumeButton.setFlat(False)
         inputVolumeLayout.addWidget(self.loadSampleVolumeButton)
-        inputLayout.addRow("Input volume:", inputVolumeWidget)
+        inputLayout.addRow(tr("Input volume:"), inputVolumeWidget)
 
-        self.outputSegmentationLabel = qt.QLabel("Output segmentation:", self.inputWidget)
+        self.outputSegmentationLabel = qt.QLabel(tr("Output segmentation:"), self.inputWidget)
         self.outputSegmentationLabel.setBuddy(self.segmentationNodeSelector)
         inputLayout.addRow(self.outputSegmentationLabel, self.segmentationNodeSelector)
 
         # Device is currently the only runtime preference. Keep it direct and
         # legible instead of wrapping one row in an otherwise empty disclosure.
-        self.deviceLabel = qt.QLabel("Device:", self.inputWidget)
+        self.deviceLabel = qt.QLabel(tr("Device:"), self.inputWidget)
         self.deviceLabel.setBuddy(self.deviceComboBox)
         inputLayout.addRow(self.deviceLabel, self.deviceComboBox)
         self.deviceHintLabel = qt.QLabel()
@@ -248,9 +249,9 @@ class SegmentationWidget(qt.QWidget):
         layout.addWidget(self.resultQualityFlagsLabel)
 
         self.applyButton = createButton(
-            "Apply",
+            tr("Apply"),
             callback=self.onApplyClicked,
-            toolTip="Click to run the segmentation.",
+            toolTip=tr("Run the segmentation."),
             icon=icon("start_icon.png")
         )
 
@@ -263,8 +264,8 @@ class SegmentationWidget(qt.QWidget):
         self.inferenceStatusWidget = qt.QWidget(self)
         inferenceStatusLayout = qt.QVBoxLayout(self.inferenceStatusWidget)
         inferenceStatusLayout.setContentsMargins(0, 0, 0, 0)
-        self.inferenceStageLabel = qt.QLabel("Stage: waiting to start")
-        self.inferenceElapsedLabel = qt.QLabel("Elapsed: 00:00")
+        self.inferenceStageLabel = qt.QLabel(tr("Stage: waiting to start"))
+        self.inferenceElapsedLabel = qt.QLabel(tr("Elapsed: 00:00"))
         self.inferenceEtaLabel = qt.QLabel()
         self.inferenceProgressBar = qt.QProgressBar()
         # A determinate zero-value bar remains still while idle. Indeterminate
@@ -278,8 +279,8 @@ class SegmentationWidget(qt.QWidget):
         progressLayout.setContentsMargins(0, 0, 0, 0)
         progressLayout.addWidget(self.inferenceProgressBar, 1)
         self.viewLiveLogButton = createButton(
-            "View live log…", callback=self.showInfoLogs,
-            toolTip="Open the live activity log without interrupting inference.", parent=self.inferenceStatusWidget,
+            tr("View live log…"), callback=self.showInfoLogs,
+            toolTip=tr("Open the live activity log without interrupting inference."), parent=self.inferenceStatusWidget,
         )
         progressLayout.addWidget(self.viewLiveLogButton)
         inferenceStatusLayout.addLayout(progressLayout)
@@ -292,9 +293,9 @@ class SegmentationWidget(qt.QWidget):
         self.inferenceEtaLabel.setVisible(False)
 
         self.stopButton = createButton(
-            "Stop",
+            tr("Stop"),
             callback=self.onStopClicked,
-            toolTip="Click to Stop the segmentation."
+            toolTip=tr("Stop the segmentation.")
         )
         self.stopWidget = qt.QWidget(self)
         stopLayout = qt.QVBoxLayout(self.stopWidget)
@@ -320,7 +321,7 @@ class SegmentationWidget(qt.QWidget):
         # the editor and the display-only surface conversion setting together so the
         # default scan-and-run panel does not imply that smoothing affects inference.
         self.refineResultCollapsibleButton = ctk.ctkCollapsibleButton()
-        self.refineResultCollapsibleButton.text = "Refine result"
+        self.refineResultCollapsibleButton.text = tr("Refine result")
         # Reviewing the result is the immediate next task after inference, so leave
         # this section open the first time it becomes available.
         self.refineResultCollapsibleButton.collapsed = False
@@ -331,7 +332,7 @@ class SegmentationWidget(qt.QWidget):
         self.surfaceSmoothingWidget = qt.QWidget(self.refineResultCollapsibleButton)
         surfaceSmoothingLayout = qt.QFormLayout(self.surfaceSmoothingWidget)
         surfaceSmoothingLayout.setContentsMargins(0, 0, 0, 0)
-        surfaceSmoothingLayout.addRow("Surface smoothing:", self.surfaceSmoothingSlider)
+        surfaceSmoothingLayout.addRow(tr("Surface smoothing:"), self.surfaceSmoothingSlider)
         refineResultLayout.addWidget(self.surfaceSmoothingWidget)
         self.refineResultCollapsibleButton.setVisible(False)
         layout.addWidget(self.refineResultCollapsibleButton)
@@ -340,20 +341,20 @@ class SegmentationWidget(qt.QWidget):
         measurementsLayout = qt.QVBoxLayout(self.measurementsWidget)
         measurementsLayout.setContentsMargins(0, 0, 0, 0)
         self.measurementsTable = qt.QTableWidget(0, 3, self.measurementsWidget)
-        self.measurementsTable.setHorizontalHeaderLabels(["Structure", "Volume (cc)", "Volume (mm³)"])
+        self.measurementsTable.setHorizontalHeaderLabels([tr("Structure"), tr("Volume (cc)"), tr("Volume (mm³)")])
         self.measurementsTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
         self.measurementsTable.setSelectionMode(qt.QAbstractItemView.NoSelection)
         self.measurementsTable.horizontalHeader().setStretchLastSection(True)
         measurementsLayout.addWidget(self.measurementsTable)
         measurementsActions = qt.QHBoxLayout()
-        self.copyMeasurementsButton = createButton("Copy CSV", callback=self.onCopyMeasurementsClicked)
-        self.saveMeasurementsButton = createButton("Save CSV…", callback=self.onSaveMeasurementsClicked)
+        self.copyMeasurementsButton = createButton(tr("Copy CSV"), callback=self.onCopyMeasurementsClicked)
+        self.saveMeasurementsButton = createButton(tr("Save CSV…"), callback=self.onSaveMeasurementsClicked)
         measurementsActions.addWidget(self.copyMeasurementsButton)
         measurementsActions.addWidget(self.saveMeasurementsButton)
         measurementsActions.addStretch()
         measurementsLayout.addLayout(measurementsActions)
         self.measurementsCollapsibleButton = ctk.ctkCollapsibleButton()
-        self.measurementsCollapsibleButton.text = "Measurements"
+        self.measurementsCollapsibleButton.text = tr("Measurements")
         self.measurementsCollapsibleButton.collapsed = False
         self.measurementsCollapsibleButton.setLayout(qt.QVBoxLayout())
         self.measurementsCollapsibleButton.layout().addWidget(self.measurementsWidget)
@@ -361,11 +362,12 @@ class SegmentationWidget(qt.QWidget):
         layout.addWidget(self.measurementsCollapsibleButton)
 
         self.exportCollapsibleButton = addInCollapsibleLayout(
-            exportWidget, layout, "Export segmentation", isCollapsed=True
+            exportWidget, layout, tr("Export segmentation"), isCollapsed=True
         )
         layout.addStretch()
 
         self.isStopping = False
+        self._isCleanedUp = False
         self._inferenceTimer = qt.QTimer(self)
         self._inferenceTimer.setInterval(1000)
         self._inferenceTimer.timeout.connect(self._updateInferenceElapsedTime)
@@ -386,10 +388,14 @@ class SegmentationWidget(qt.QWidget):
             self.show3DButton,
             progressCallback=self.onProgressInfo,
         )
+        self._segmentationNodeObserver = None
+        self._logicConnections = []
 
         self.onInputChanged()
         self.updateSegmentEditorWidget()
-        self.sceneCloseObserver = slicer.mrmlScene.AddObserver(slicer.mrmlScene.EndCloseEvent, self.onSceneChanged)
+        self._sceneCloseObserver = slicer.mrmlScene.AddObserver(
+            slicer.mrmlScene.EndCloseEvent, self.onSceneChanged
+        )
         self.onSceneChanged(doStopInference=False)
         self._connectSegmentationLogic()
         self._loadPersistedSettings()
@@ -411,8 +417,8 @@ class SegmentationWidget(qt.QWidget):
         """Install the Python requirements and download model weights, then refresh."""
         if not self.isNNUNetModuleInstalled():
             slicer.util.errorDisplay(
-                "This module depends on the NNUNet module."
-                " Please install the NNUNet module and restart to proceed."
+                tr("DentoFac Segmentator requires the NNUNet extension. "
+                   "Install it from Slicer's Extension Manager, restart Slicer, and try again.")
             )
             self.refreshInstallationStatus()
             return
@@ -495,9 +501,9 @@ class SegmentationWidget(qt.QWidget):
     def _updateDeviceHint(self):
         """Show the selected device's speed expectation before Apply."""
         messages = {
-            "cuda": "GPU (CUDA) — fast.",
-            "mps": "Apple GPU (MPS) — fast.",
-            "cpu": "CPU — segmentation may take up to ~1 hour.",
+            "cuda": tr("GPU (CUDA) — fast."),
+            "mps": tr("Apple GPU (MPS) — fast."),
+            "cpu": tr("CPU — segmentation may take up to ~1 hour."),
         }
         self.deviceHintLabel.setText(messages.get(self._selectedDevice(), ""))
 
@@ -515,16 +521,16 @@ class SegmentationWidget(qt.QWidget):
             if not line.advisory and line.label != "Compute device"
         )
         if status.is_ready:
-            verdict_str = "Ready to run"
+            verdict_str = tr("Ready to run")
         else:
-            verdict_str = f"{issue_count} issue(s) — see below"
+            verdict_str = tr("{count} issue(s) — see below").format(count=issue_count)
 
         verdict_changed = not hasattr(self, '_lastInstallationVerdict') or self._lastInstallationVerdict != verdict_str
         lines_changed = not hasattr(self, '_lastInstallationLines') or self._lastInstallationLines != [l.detail for l in status.lines]
         should_log = check_online or verdict_changed or lines_changed
 
         self.statusVerdictLabel.setText(verdict_str)
-        self.installationStatusCollapsibleButton.text = "● Installation Status"
+        self.installationStatusCollapsibleButton.text = tr("● Installation status")
         self.installationStatusCollapsibleButton.setStyleSheet(
             f"color: {'#2e7d32' if status.is_ready else '#c62828'};"
         )
@@ -584,28 +590,73 @@ class SegmentationWidget(qt.QWidget):
         # diagnostic consistent.
         if val_res.authoritative and val_res.status in (ValidationStatus.INVALID, ValidationStatus.FLATTENED):
             self._statusActionIsForcedWeights = True
-            self.statusActionButton.setText("Re-download weights")
-            self.statusActionButton.setToolTip("Replace the broken or legacy model weights.")
+            self.statusActionButton.setText(tr("Re-download model"))
+            self.statusActionButton.setToolTip(tr("Replace the invalid or legacy model files."))
         else:
             self._statusActionIsForcedWeights = False
-            self.statusActionButton.setText("Install" if self._statusActionIsInstall else "Re-check")
+            self.statusActionButton.setText(tr("Install") if self._statusActionIsInstall else tr("Re-check"))
             self.statusActionButton.setToolTip(
-                "Install the missing Python dependencies and/or model weights."
+                tr("Install the missing Python dependencies and/or model files.")
                 if self._statusActionIsInstall
-                else "Re-check installation status (also checks online for weight updates)."
+                else tr("Re-check installation status and look online for model updates.")
             )
 
         # Disable Apply until dependencies are met (device availability is ignored,
         # as the run falls back to CPU).
         self.applyButton.setEnabled(self.getCurrentVolumeNode() is not None and status.is_ready)
 
+    def cleanup(self):
+        """Release scene observers, timers, logic signals, and utility dialogs.
+
+        Slicer can retain a scripted widget while a scene closes or the user switches
+        modules.  Cleanup is intentionally idempotent so either the module host or
+        object destruction can invoke it without leaving callbacks attached.
+        """
+        if self._isCleanedUp:
+            return
+        self._isCleanedUp = True
+        if self._inferenceProgressActive:
+            self.onStopClicked()
+        else:
+            self._stopInferenceProgress()
+        self._disconnectSegmentationNodeObserver()
+        observer = getattr(self, "_sceneCloseObserver", None)
+        if observer is not None:
+            try:
+                slicer.mrmlScene.RemoveObserver(observer)
+            except (AttributeError, RuntimeError):
+                pass
+            self._sceneCloseObserver = None
+        for signal, slot, connection in self._logicConnections:
+            try:
+                signal.disconnect(connection if connection is not None else slot)
+            except (AttributeError, RuntimeError, TypeError):
+                try:
+                    signal.disconnect(slot)
+                except (AttributeError, RuntimeError, TypeError):
+                    pass
+        self._logicConnections.clear()
+        try:
+            self.loading.stop()
+        except (AttributeError, RuntimeError):
+            pass
+        if self._logDialog is not None:
+            try:
+                self._logDialog.close()
+            except (RuntimeError, ValueError):
+                pass
+        self._logDialog = None
+        self._liveLogTextEdit = None
+
     def __del__(self):
         try:
-            slicer.mrmlScene.RemoveObserver(self.sceneCloseObserver)
-        except Exception:  # noqa
+            self.cleanup()
+        except Exception:  # Object teardown must never interfere with Slicer shutdown.
             pass
 
     def onSceneChanged(self, *_, doStopInference=True):
+        if self._isCleanedUp:
+            return
         if doStopInference:
             self.onStopClicked()
         self.segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentEditorNode")
@@ -615,6 +666,7 @@ class SegmentationWidget(qt.QWidget):
         self._qualityFlagsBySegmentation.clear()
         self._clearMeasurements()
         self._clearResultQualityFlags()
+        self._disconnectSegmentationNodeObserver()
         self._prevSegmentationNode = None
         self._initSlicerDisplay()
         self._updateResultUiVisibility()
@@ -719,10 +771,10 @@ class SegmentationWidget(qt.QWidget):
             ret = qt.QMessageBox.question(
                 self,
                 f"{deviceName} device not available",
-                f"Selected device ({deviceName}) is not currently available on your system and will "
-                "default to CPU device.\n"
-                "Running the segmentation may take up to 1 hour.\n"
-                "Would you like to proceed?"
+                tr("Selected device ({device}) is not currently available on your system. "
+                   "DentoFac Segmentator will use the CPU instead.\n"
+                   "Segmentation may take up to one hour.\n"
+                   "Would you like to continue?").format(device=deviceName)
             )
             if ret == qt.QMessageBox.No:
                 self._setApplyVisible(True)
@@ -742,8 +794,8 @@ class SegmentationWidget(qt.QWidget):
         self._inferenceStartedAt = time.monotonic()
         self._inferenceProgressActive = True
         self._inferenceProgressTracker.reset()
-        self.inferenceStageLabel.setText("Stage: starting inference…")
-        self.inferenceElapsedLabel.setText("Elapsed: 00:00")
+        self.inferenceStageLabel.setText(tr("Stage: starting inference…"))
+        self.inferenceElapsedLabel.setText(tr("Elapsed: 00:00"))
         self.inferenceEtaLabel.setText("")
         self.inferenceEtaLabel.setVisible(False)
         self.inferenceProgressBar.setRange(0, 0)
@@ -763,21 +815,25 @@ class SegmentationWidget(qt.QWidget):
         if not self._inferenceProgressActive or self._inferenceStartedAt is None:
             return
         elapsed = time.monotonic() - self._inferenceStartedAt
-        self.inferenceElapsedLabel.setText(f"Elapsed: {formatElapsedTime(elapsed)}")
+        self.inferenceElapsedLabel.setText(
+            tr("Elapsed: {elapsed}").format(elapsed=formatElapsedTime(elapsed))
+        )
         self._renderInferenceEta(self._inferenceProgressTracker.snapshot(elapsed).eta_minutes)
 
     def _renderInferenceEta(self, eta_minutes):
         if eta_minutes is None:
             self.inferenceEtaLabel.setVisible(False)
             return
-        self.inferenceEtaLabel.setText(f"Estimate: ~{eta_minutes} min remaining")
+        self.inferenceEtaLabel.setText(
+            tr("Estimate: ~{minutes} min remaining").format(minutes=eta_minutes)
+        )
         self.inferenceEtaLabel.setVisible(True)
 
     def _applyInferenceProgressUpdate(self, update):
         """Render the pure tracker's state after one parsed progress update."""
         elapsed = time.monotonic() - self._inferenceStartedAt
         state = self._inferenceProgressTracker.apply(update, elapsed)
-        self.inferenceStageLabel.setText(f"Stage: {state.stage}")
+        self.inferenceStageLabel.setText(tr("Stage: {stage}").format(stage=state.stage))
         if not state.is_determinate:
             self.inferenceProgressBar.setRange(0, 0)
             self.inferenceProgressBar.setTextVisible(False)
@@ -814,8 +870,8 @@ class SegmentationWidget(qt.QWidget):
 
         if not hasInternetConnection():
             slicer.util.errorDisplay(
-                "Unable to load the sample volume because no internet connection is available. "
-                "Please connect to the internet and try again."
+                tr("Unable to load the sample volume because no internet connection is available. "
+                   "Connect to the internet and try again.")
             )
             return
 
@@ -837,9 +893,8 @@ class SegmentationWidget(qt.QWidget):
             self.inputSelector.setCurrentNode(volumeNode)
         except Exception as error:  # SampleData exposes network errors as varied exception types.
             slicer.util.errorDisplay(
-                "Unable to load the CBCT Dental Surgery sample volume. "
-                "Please check your internet connection and try again.\n\n"
-                f"Details: {error}"
+                tr("Unable to load the CBCT Dental Surgery sample volume. "
+                   "Check your internet connection and try again.\n\nDetails: {error}").format(error=error)
             )
         finally:
             self.loadSampleVolumeButton.setEnabled(True)
@@ -885,8 +940,7 @@ class SegmentationWidget(qt.QWidget):
         """
         if self._prevSegmentationNode:
             self._prevSegmentationNode.SetDisplayVisibility(False)
-            if hasattr(self, '_segmentationNodeObserver'):
-                self._prevSegmentationNode.RemoveObserver(self._segmentationNodeObserver)
+        self._disconnectSegmentationNodeObserver()
 
         segmentationNode = self.getCurrentSegmentationNode()
         self._prevSegmentationNode = segmentationNode
@@ -902,6 +956,16 @@ class SegmentationWidget(qt.QWidget):
         self._showMeasurementsForSegmentation(segmentationNode)
         self._showResultQualityFlagsForSegmentation(segmentationNode)
         self._updateResultUiVisibility()
+
+    def _disconnectSegmentationNodeObserver(self):
+        """Detach the selected-result observer before changing scenes or nodes."""
+        observer = getattr(self, "_segmentationNodeObserver", None)
+        if observer is not None and self._prevSegmentationNode is not None:
+            try:
+                self._prevSegmentationNode.RemoveObserver(observer)
+            except (AttributeError, RuntimeError):
+                pass
+        self._segmentationNodeObserver = None
 
     def getCurrentVolumeNode(self):
         return self.inputSelector.currentNode()
@@ -920,12 +984,12 @@ class SegmentationWidget(qt.QWidget):
             return
 
         try:
-            self.onProgressInfo("Loading inference results...")
+            self.onProgressInfo(tr("Loading inference results…"))
             self._loadSegmentationResults()
-            self.onProgressInfo("Inference ended successfully.")
+            self.onProgressInfo(tr("Inference completed successfully."))
         except RuntimeError as e:
             slicer.util.errorDisplay(e)
-            self.onProgressInfo(f"Error loading results :\n{e}")
+            self.onProgressInfo(tr("Could not load the segmentation result:\n{error}").format(error=e))
         finally:
             self._setApplyVisible(True)
             self._updateResultUiVisibility()
@@ -1091,7 +1155,9 @@ class SegmentationWidget(qt.QWidget):
             # UTF-8 BOM lets Excel reliably recognize the mm³ column header.
             filePath.write_text(self._measurementReport.csv_text, encoding="utf-8-sig")
         except OSError as error:
-            slicer.util.errorDisplay(f"Failed to save measurements to {filePath}:\n{error}")
+            slicer.util.errorDisplay(
+                tr("Failed to save measurements to {path}:\n{error}").format(path=filePath, error=error)
+            )
 
     def onInferenceError(self, errorMsg):
         """
@@ -1114,7 +1180,7 @@ class SegmentationWidget(qt.QWidget):
             if weights_long:
                 errorMsg = f"{weights_long}\n\nOriginal error:\n{errorMsg}"
 
-        slicer.util.errorDisplay("Encountered error during inference :\n" + str(errorMsg))
+        slicer.util.errorDisplay(tr("Segmentation failed:\n{error}").format(error=errorMsg))
 
     def onProgressInfo(self, infoMsg):
         """
@@ -1163,7 +1229,7 @@ class SegmentationWidget(qt.QWidget):
                 self._liveLogTextEdit = None
 
         dialog = qt.QDialog(self)
-        dialog.setWindowTitle("DentoFac Segmentator activity log")
+        dialog.setWindowTitle(tr("DentoFac Segmentator activity log"))
         layout = qt.QVBoxLayout(dialog)
 
         textEdit = qt.QTextEdit()
@@ -1206,7 +1272,7 @@ class SegmentationWidget(qt.QWidget):
         md_text = diag.serialize_markdown(data)
 
         dialog = qt.QDialog()
-        dialog.setWindowTitle("Support Diagnostics")
+        dialog.setWindowTitle(tr("Support diagnostics"))
         layout = qt.QVBoxLayout(dialog)
 
         textEdit = qt.QTextEdit()
@@ -1219,17 +1285,23 @@ class SegmentationWidget(qt.QWidget):
         
         def onCopy():
             qt.QApplication.clipboard().setText(textEdit.toPlainText())
-            slicer.util.infoDisplay("Copied to clipboard.")
+            slicer.util.infoDisplay(tr("Copied to clipboard."))
             
         def onSave():
-            fileName = qt.QFileDialog.getSaveFileName(dialog, "Save Diagnostics", f"dentofac-segmentator-diagnostics-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}.json", "JSON Files (*.json)")
+            fileName = qt.QFileDialog.getSaveFileName(
+                dialog,
+                tr("Save diagnostics"),
+                f"dentofac-segmentator-diagnostics-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}.json",
+                tr("JSON files (*.json)"),
+            )
             if fileName:
                 try:
-                    with open(fileName, "w", encoding="utf-8") as f:
-                        f.write(json_text)
-                    slicer.util.infoDisplay(f"Saved to {fileName}")
-                except Exception as e:
-                    slicer.util.errorDisplay(f"Failed to save {fileName}:\n{e}")
+                    Path(fileName).write_text(json_text, encoding="utf-8")
+                    slicer.util.infoDisplay(tr("Saved to {path}").format(path=fileName))
+                except OSError as error:
+                    slicer.util.errorDisplay(
+                        tr("Failed to save {path}:\n{error}").format(path=fileName, error=error)
+                    )
 
         def onReport():
             import urllib.parse
@@ -1237,7 +1309,7 @@ class SegmentationWidget(qt.QWidget):
             # Support belongs to DentoFac. The acknowledgement and model-download
             # diagnostics retain the upstream links as provenance.
             repo_slug = "DentoFac/SlicerDentoFac"
-            title = "Bug report: [Brief description]"
+            title = tr("Bug report: [Brief description]")
             
             body = diag.prepare_github_issue_body(textEdit.toPlainText())
             encoded_body = urllib.parse.quote(body)
@@ -1245,9 +1317,9 @@ class SegmentationWidget(qt.QWidget):
             url = f"https://github.com/{repo_slug}/issues/new?title={urllib.parse.quote(title)}&body={encoded_body}"
             qt.QDesktopServices.openUrl(qt.QUrl(url))
         
-        btnLayout.addWidget(createButton("Copy to clipboard", callback=onCopy))
-        btnLayout.addWidget(createButton("Save to file...", callback=onSave))
-        btnLayout.addWidget(createButton("Report an issue", callback=onReport))
+        btnLayout.addWidget(createButton(tr("Copy to clipboard"), callback=onCopy))
+        btnLayout.addWidget(createButton(tr("Save to file…"), callback=onSave))
+        btnLayout.addWidget(createButton(tr("Report an issue"), callback=onReport))
         
         layout.addLayout(btnLayout)
 
@@ -1504,9 +1576,13 @@ class SegmentationWidget(qt.QWidget):
         if self.logic is None:
             return
 
-        self.logic.progressInfo.connect(self.onProgressInfo)
-        self.logic.errorOccurred.connect(self.onInferenceError)
-        self.logic.inferenceFinished.connect(self.onInferenceFinished)
+        for signal, slot in (
+            (self.logic.progressInfo, self.onProgressInfo),
+            (self.logic.errorOccurred, self.onInferenceError),
+            (self.logic.inferenceFinished, self.onInferenceFinished),
+        ):
+            connection = signal.connect(slot)
+            self._logicConnections.append((signal, slot, connection))
 
     @classmethod
     def nnUnetFolder(cls) -> Path:

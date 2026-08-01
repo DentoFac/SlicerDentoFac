@@ -4,6 +4,7 @@ set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
   ${MODULE_NAME}Lib/__init__.py
   ${MODULE_NAME}Lib/ExportManager.py
+  ${MODULE_NAME}Lib/DiagnosticsTabAdapter.py
   ${MODULE_NAME}Lib/IconPath.py
   ${MODULE_NAME}Lib/InferenceProgress.py
   ${MODULE_NAME}Lib/InstallationStatus.py

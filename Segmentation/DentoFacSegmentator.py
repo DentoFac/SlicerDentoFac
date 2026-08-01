@@ -7,20 +7,23 @@ import qt
 import ctk
 from pathlib import Path
 from slicer.ScriptedLoadableModule import *
+from slicer.i18n import tr, translate
 
 from DentoFacSegmentatorLib import SegmentationWidget
+from DentoFacSegmentatorLib.DiagnosticsTabAdapter import DiagnosticsTabAdapter
 
 
 class DentoFacSegmentator(ScriptedLoadableModule):
     def __init__(self, parent):
-        from slicer.i18n import tr, translate
         ScriptedLoadableModule.__init__(self, parent)
         self.parent.title = tr("DentoFac Segmentator")
         self.parent.icon = qt.QIcon(
             str(Path(__file__).parent / "Resources" / "Icons" / "dentofac-segmentator.svg")
         )
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "DentoFac")]
-        self.parent.dependencies = ["SlicerNNUNet"]
+        # DentoFac owns DentoFacLib.  Declaring the Hub first keeps the shared
+        # package import explicit should the modules ever be packaged separately.
+        self.parent.dependencies = ["DentoFac", "SlicerNNUNet"]
         self.parent.contributors = [
             "Gauthier DOT (AP-HP)",
             "Laurent GAJNY (ENSAM)",
@@ -52,6 +55,7 @@ class DentoFacSegmentatorWidget(ScriptedLoadableModuleWidget):
         self._helpTabsDefaultMaximumHeight = None
         self._diagnosticsTabsVisible = False
         self._inlineDiagnosticsCollapsibleButton = None
+        self._isCleanedUp = False
 
     def setup(self) -> None:
         """Called when the user opens the module the first time and the widget is initialized."""
@@ -74,11 +78,8 @@ class DentoFacSegmentatorWidget(ScriptedLoadableModuleWidget):
 
     @staticmethod
     def _findHelpAcknowledgementTabs():
-        """Return Slicer's shared Help/Acknowledgement tabs when this version exposes them."""
-        mainWindow = slicer.util.mainWindow()
-        if mainWindow is None:
-            return None
-        return mainWindow.findChild(qt.QTabWidget, "HelpAcknowledgementTabWidget")
+        """Return Slicer's optional shared tabs through the compatibility adapter."""
+        return DiagnosticsTabAdapter.find_shared_tabs()
 
     def _mountDiagnosticsInline(self):
         """Keep diagnostics reachable when Slicer's private shared-tab lookup changes."""
@@ -86,7 +87,7 @@ class DentoFacSegmentatorWidget(ScriptedLoadableModuleWidget):
             return
 
         fallback = ctk.ctkCollapsibleButton()
-        fallback.text = "Diagnostics"
+        fallback.text = tr("Diagnostics")
         fallback.collapsed = True
         fallbackLayout = qt.QVBoxLayout()
         fallbackLayout.setContentsMargins(0, 0, 0, 0)
@@ -103,7 +104,7 @@ class DentoFacSegmentatorWidget(ScriptedLoadableModuleWidget):
         if str(moduleName) == self.moduleName:
             self._diagnosticsTabsVisible = True
             if tabIndex < 0:
-                self._helpAcknowledgementTabs.addTab(self._diagnosticsTab, "Diagnostics")
+                self._helpAcknowledgementTabs.addTab(self._diagnosticsTab, tr("Diagnostics"))
             self._fitHelpTabToCurrentPage()
         elif tabIndex >= 0:
             self._diagnosticsTabsVisible = False
@@ -135,10 +136,21 @@ class DentoFacSegmentatorWidget(ScriptedLoadableModuleWidget):
             self._helpAcknowledgementTabs.setMaximumHeight(self._helpTabsDefaultMaximumHeight)
 
     def cleanup(self):
+        if self._isCleanedUp:
+            return
+        self._isCleanedUp = True
+        if getattr(self, "segmentationWidget", None) is not None:
+            self.segmentationWidget.cleanup()
         if self._moduleSelector is not None:
-            self._moduleSelector.disconnect("moduleSelected(QString)", self._onModuleSelected)
+            try:
+                self._moduleSelector.disconnect("moduleSelected(QString)", self._onModuleSelected)
+            except (RuntimeError, TypeError):
+                pass
         if self._helpAcknowledgementTabs is not None and self._diagnosticsTab is not None:
-            self._helpAcknowledgementTabs.disconnect("currentChanged(int)", self._fitHelpTabToCurrentPage)
+            try:
+                self._helpAcknowledgementTabs.disconnect("currentChanged(int)", self._fitHelpTabToCurrentPage)
+            except (RuntimeError, TypeError):
+                pass
             tabIndex = self._helpAcknowledgementTabs.indexOf(self._diagnosticsTab)
             if tabIndex >= 0:
                 self._helpAcknowledgementTabs.removeTab(tabIndex)

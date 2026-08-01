@@ -11,6 +11,8 @@ from DentoFacLib.Models import (
     ValidationResult,
     ValidationStatus,
     find_configuration_folder,
+    has_flattened_layout,
+    is_nnunet_dataset_path_valid,
     validate_model,
 )
 
@@ -47,20 +49,14 @@ def findConfigurationFolder(root: Optional[Path] = None) -> Optional[Path]:
 
 
 def _isNNUNetDatasetPathValid(datasetPath: Path) -> bool:
-    from DentoFacLib.Models.ModelStore import _is_nnunet_dataset_path_valid
-    return _is_nnunet_dataset_path_valid(datasetPath)
+    """Backward-compatible workflow name for the shared structural check."""
+    return is_nnunet_dataset_path_valid(datasetPath)
 
 
 def detectFlattenedLayout(root: Optional[Path] = None) -> bool:
     """Returns True if weight-ish files exist but not in a valid nested config folder."""
     rootPath = root or modelRoot()
-    if findConfigurationFolder(rootPath) is not None:
-        return False
-    
-    for path in rootPath.rglob("*"):
-        if path.is_file() and (path.name == "dataset.json" or path.name == "plans.json" or path.suffix == ".pth"):
-            return True
-    return False
+    return has_flattened_layout(rootPath)
 
 
 def inferenceModelPath(root: Optional[Path] = None) -> Path:

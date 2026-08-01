@@ -156,13 +156,14 @@ def find_configuration_folder(root: Path) -> Optional[Path]:
     try:
         return next(
             path.parent for path in Path(root).rglob("dataset.json")
-            if _is_nnunet_dataset_path_valid(path)
+            if is_nnunet_dataset_path_valid(path)
         )
     except StopIteration:
         return None
 
 
-def _is_nnunet_dataset_path_valid(dataset_path: Path) -> bool:
+def is_nnunet_dataset_path_valid(dataset_path: Path) -> bool:
+    """Return whether ``dataset.json`` is in an expected nnU-Net layout."""
     configuration = dataset_path.parent
     dataset = configuration.parent
     return len(configuration.name.split("__")) == 3 and (
@@ -170,7 +171,8 @@ def _is_nnunet_dataset_path_valid(dataset_path: Path) -> bool:
     )
 
 
-def _has_flattened_layout(root: Path) -> bool:
+def has_flattened_layout(root: Path) -> bool:
+    """Detect model-like files that are not arranged as a valid nnU-Net model."""
     if find_configuration_folder(root) is not None:
         return False
     return any(
@@ -190,7 +192,7 @@ def validate_model(root: Path, folds: str = "0", parameter=None) -> ValidationRe
         if is_valid:
             status = ValidationStatus.VALID
         elif find_configuration_folder(root) is None:
-            status = ValidationStatus.FLATTENED if _has_flattened_layout(root) else ValidationStatus.MISSING
+            status = ValidationStatus.FLATTENED if has_flattened_layout(root) else ValidationStatus.MISSING
         else:
             status = ValidationStatus.INVALID
         return ValidationResult(is_valid, reason, True, configuration, status)
@@ -198,5 +200,5 @@ def validate_model(root: Path, folds: str = "0", parameter=None) -> ValidationRe
         configuration = find_configuration_folder(root)
         if configuration is not None:
             return ValidationResult(True, "", False, configuration, ValidationStatus.VALID)
-        status = ValidationStatus.FLATTENED if _has_flattened_layout(root) else ValidationStatus.MISSING
+        status = ValidationStatus.FLATTENED if has_flattened_layout(root) else ValidationStatus.MISSING
         return ValidationResult(False, "Lenient check failed: no valid dataset.json found", False, None, status)
