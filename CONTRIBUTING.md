@@ -16,6 +16,11 @@ pull requests with the relevant tests and documentation.
   DentoFacLib only when it is broadly reusable.
 - Add or update tests appropriate to the change, and describe the validation
   performed in the pull request.
+- Run the documented syntax and headless regression commands before each
+  extension commit. The GitHub Actions workflow repeats those blocking checks on
+  pull requests and `main` pushes; Slicer GUI, CTest, package-install, and
+  inference checks remain local/release gates until a supported Slicer-runtime
+  CI environment is available.
 
 We aim to contribute generally useful fixes upstream where practical and to
 work respectfully with the maintainers whose work DentoFac builds upon.

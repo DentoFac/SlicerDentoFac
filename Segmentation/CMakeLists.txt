@@ -46,9 +46,33 @@ slicerMacroBuildScriptedModule(
   NAME ${MODULE_NAME}
   SCRIPTS ${MODULE_PYTHON_SCRIPTS}
   RESOURCES ${MODULE_PYTHON_RESOURCES}
-  WITH_GENERIC_TESTS
   )
 
 if(BUILD_TESTING)
+  if(DENTOFAC_TEST_NNUNET_MODULE_PATH)
+    if(NOT EXISTS "${DENTOFAC_TEST_NNUNET_MODULE_PATH}/SlicerNNUNet.py")
+      message(FATAL_ERROR
+        "DENTOFAC_TEST_NNUNET_MODULE_PATH must contain SlicerNNUNet.py: "
+        "${DENTOFAC_TEST_NNUNET_MODULE_PATH}")
+    endif()
+
+    # SlicerNNUNet is external to this extension, so build its generic module
+    # test only when a compatible installed module directory is supplied.
+    SlicerMacroConfigureGenericPythonModuleTests("${MODULE_NAME}" _generic_unitest_scripts)
+    foreach(script_name ${_generic_unitest_scripts})
+      slicer_add_python_unittest(
+        SCRIPT ${script_name}
+        SLICER_ARGS --no-main-window --disable-cli-modules
+          --additional-module-path ${CMAKE_BINARY_DIR}/${Slicer_QTSCRIPTEDMODULES_LIB_DIR}
+          --additional-module-path ${DENTOFAC_TEST_NNUNET_MODULE_PATH}
+        TESTNAME_PREFIX nomainwindow_
+        )
+    endforeach()
+  else()
+    message(STATUS
+      "DentoFac Segmentator generic module CTest is disabled: set "
+      "DENTOFAC_TEST_NNUNET_MODULE_PATH to a compatible NNUNet scripted-module directory.")
+  endif()
+
   slicer_add_python_unittest(SCRIPT ${MODULE_NAME}.py)
 endif()

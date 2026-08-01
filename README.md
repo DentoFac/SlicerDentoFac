@@ -8,9 +8,9 @@ dento-maxillo-facial workflows.
 The package currently contains:
 
 - **DentoFac Hub** — a visible setup, readiness, and diagnostics entry point.
-- **DentoFac Segmentator** — the first workflow module. It is presently a
-  migration scaffold; the existing segmentation workflow will be ported in
-  tested slices.
+- **DentoFac Segmentator** — an automatic nnU-Net workflow for dental CT and
+  CBCT segmentation, including result review, measurements, quality flags,
+  exports, activity logs, and support diagnostics.
 
 DentoFacLib is an internal shared Python library. It is packaged with the
 Hub module and may be imported by DentoFac workflow modules; it is not an
@@ -55,8 +55,29 @@ texts are kept in [`LICENSES/`](LICENSES/). A component must not be included
 until its license and redistribution obligations have been reviewed. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution requirements.
 
-## Development status
+## Using DentoFac Segmentator
 
-This repository is intentionally starting with package structure and import
-boundaries. It does not yet ship the clinical segmentation workflow, model
-weights, or Python-runtime installer.
+Use **DentoFac Hub** to inspect shared runtime readiness and to initiate the
+user-controlled setup actions. Open **DentoFac Segmentator** to select a dental
+CT/CBCT volume and run the clinical workflow.
+
+The extension requires the Slicer **NNUNet** extension (`SlicerNNUNet` module).
+When NNUNet is installed, the Hub and Segmentator provide explicit actions for
+installing its Python requirements and downloading the Segmentator model. These
+actions are never started merely by opening a module. Downloaded model files are
+stored in DentoFac application data, not in the installed extension; model
+weights are not distributed with this package.
+
+The initial supported baseline is **3D Slicer 5.12.3** with the NNUNet extension
+available from its configured Extensions Index. The model download retains the
+upstream SlicerDentalSegmentator release as provenance; DentoFac support and
+issue reporting are routed to the DentoFac project.
+
+## Development and validation
+
+The blocking plain-Python regression tier and the local Slicer test tiers are
+documented in [`Segmentation/Testing/README.md`](Segmentation/Testing/README.md).
+Before a release, also configure/package against the supported Slicer developer
+build, run CTest from that build, inspect the installed extension tree, and run
+the clean-install, offline-cache, dependency/model recovery, device, and
+clinical smoke checks described in the controller release plan.

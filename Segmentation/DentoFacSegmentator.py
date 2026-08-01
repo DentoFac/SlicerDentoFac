@@ -65,8 +65,14 @@ class DentoFacSegmentatorWidget(ScriptedLoadableModuleWidget):
         self.layout.addWidget(self.segmentationWidget)
         self._diagnosticsTab = self.segmentationWidget.helpDiagnosticsWidget
         self._helpAcknowledgementTabs = self._findHelpAcknowledgementTabs()
-        self._moduleSelector = slicer.util.moduleSelector()
-        self._moduleSelector.connect("moduleSelected(QString)", self._onModuleSelected)
+        try:
+            self._moduleSelector = slicer.util.moduleSelector()
+        except RuntimeError:
+            # Generic module tests and batch/headless Slicer sessions have no
+            # main window. Diagnostics remains available inline in that case.
+            self._moduleSelector = None
+        if self._moduleSelector is not None:
+            self._moduleSelector.connect("moduleSelected(QString)", self._onModuleSelected)
         if self._helpAcknowledgementTabs is not None:
             self._helpTabsDefaultMinimumHeight = self._helpAcknowledgementTabs.minimumHeight
             self._helpTabsDefaultMaximumHeight = self._helpAcknowledgementTabs.maximumHeight
