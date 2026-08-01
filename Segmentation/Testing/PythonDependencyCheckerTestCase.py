@@ -23,7 +23,13 @@ from ._headless_stubs import install as _install_headless_stubs
 _install_headless_stubs()
 
 import qt
-from DentoFacSegmentatorLib.PythonDependencyChecker import PythonDependencyChecker
+from DentoFacSegmentatorLib.PythonDependencyChecker import (
+    DENTOFAC_SUPPORT_URL,
+    UPSTREAM_MODEL_REPOSITORY,
+    UPSTREAM_MODEL_URL,
+    WEIGHTS_STAGING_PREFIX,
+    PythonDependencyChecker,
+)
 
 
 class PythonDependencyCheckerTestCase(unittest.TestCase):
@@ -51,6 +57,12 @@ class PythonDependencyCheckerTestCase(unittest.TestCase):
 
             res = self.checker.downloadWeightsIfNeeded(lambda _: None)
             self.assertTrue(res)
+
+    def test_dentofac_support_and_model_provenance_are_distinct(self):
+        self.assertEqual(WEIGHTS_STAGING_PREFIX, "dentofac-segmentator-weights_")
+        self.assertEqual(DENTOFAC_SUPPORT_URL, "https://github.com/DentoFac/SlicerDentoFac")
+        self.assertEqual(UPSTREAM_MODEL_REPOSITORY, "gaudot/SlicerDentalSegmentator")
+        self.assertEqual(UPSTREAM_MODEL_URL, "https://github.com/gaudot/SlicerDentalSegmentator")
 
     def test_download_failure_keeps_existing_weights(self):
         def failing_get_url():
@@ -315,7 +327,7 @@ class PythonDependencyCheckerTestCase(unittest.TestCase):
             backups = list(self.dest_folder.parent.glob(f"{self.dest_folder.name}.bak_*"))
             self.assertEqual(len(backups), 0)
 
-            staging = list(self.dest_folder.parent.glob("dentalseg_weights_*"))
+            staging = list(self.dest_folder.parent.glob("dentofac-segmentator-weights_*"))
             self.assertEqual(len(staging), 0)
 
             self.assertEqual(len(error_calls), 1)
@@ -412,7 +424,7 @@ class PythonDependencyCheckerTestCase(unittest.TestCase):
             self.assertTrue(any("failed to record version info" in l for l in logs))
             self.assertEqual(len(error_calls), 0)
 
-            staging = list(self.dest_folder.parent.glob("dentalseg_weights_*"))
+            staging = list(self.dest_folder.parent.glob("dentofac-segmentator-weights_*"))
             self.assertEqual(len(staging), 0)
 
     @pytest.mark.baseline_slicer_runtime_quarantine

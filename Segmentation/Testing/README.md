@@ -7,7 +7,8 @@ python -m compileall -q DentoFac Segmentation
 PYTHONPATH=Segmentation python -m pytest -q \
   Segmentation/Testing/PythonDependencyCheckerTestCase.py \
   Segmentation/Testing/ExportManagerTestCase.py \
-  Segmentation/Testing/SegmentationResultProcessorTestCase.py
+  Segmentation/Testing/SegmentationResultProcessorTestCase.py \
+  Segmentation/Testing/ModuleSettingsTestCase.py
 ```
 
 The three commands above are the required local pre-commit sequence for every
@@ -15,11 +16,12 @@ later DentoFac Segmentator slice. The GitHub Actions workflow runs the same
 syntax and headless suite on pull requests and `main` pushes.
 
 - Headless tier: `PythonDependencyCheckerTestCase`,
-  `SegmentationResultProcessorTestCase`, and `InferenceProgressTestCase`.
+  `SegmentationResultProcessorTestCase`, `InferenceProgressTestCase`, and
+  `ModuleSettingsTestCase` (including settings migration).
 - Dual tier: `ExportManagerTestCase` runs in blocking headless CI and Slicer;
   six real-Slicer monkey-patch failures are the named reference-baseline
   quarantine.
-- Slicer tier: `DentoFacSegmentatorWidgetTestCase`, `ModuleSettingsTestCase`,
+- Slicer tier: `DentoFacSegmentatorWidgetTestCase`,
   `SegmentStatisticsReportTestCase`, `SegmentationWidgetTestCase`, and
   `SupportDiagnosticsTestCase`.
 - Slicer-only slow tier: `IntegrationTestCase`.

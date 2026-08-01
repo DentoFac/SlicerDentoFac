@@ -15,6 +15,10 @@ from github import Github, GithubException
 
 GITHUB_API_TIMEOUT_SECONDS = 15
 WEIGHTS_DOWNLOAD_TIMEOUT_SECONDS = (10, 60)
+UPSTREAM_MODEL_REPOSITORY = "gaudot/SlicerDentalSegmentator"
+UPSTREAM_MODEL_URL = "https://github.com/gaudot/SlicerDentalSegmentator"
+DENTOFAC_SUPPORT_URL = "https://github.com/DentoFac/SlicerDentoFac"
+WEIGHTS_STAGING_PREFIX = "dentofac-segmentator-weights_"
 
 
 def hasInternetConnection(timeOut_sec=2) -> bool:
@@ -51,7 +55,7 @@ class PythonDependencyChecker:
         self.dependencyChecked = False
         self.destWeightFolder = Path(destWeightFolder or modelRoot())
         # Model downloads retain the pinned upstream release as explicit provenance.
-        self.repo_path = repoPath or "gaudot/SlicerDentalSegmentator"
+        self.repo_path = repoPath or UPSTREAM_MODEL_REPOSITORY
         self.hasInternetConnectionF = hasInternetConnectionF or hasInternetConnection
         self.errorDisplay = errorDisplayF or slicer.util.errorDisplay
 
@@ -186,7 +190,8 @@ class PythonDependencyChecker:
                 "Failed to download weights (no internet connection). "
                 "Please retry or manually install them to proceed.\n"
                 "To manually install the weights, please refer to the documentation here :\n"
-                "https://github.com/gaudot/SlicerDentalSegmentator",
+                f"{DENTOFAC_SUPPORT_URL}\n\n"
+                f"Model source and provenance: {UPSTREAM_MODEL_URL}",
             )
             return False
 
@@ -196,7 +201,9 @@ class PythonDependencyChecker:
         # to a backup and deleted only once the swap succeeds, so every failure
         # path can roll back to the previous working weights.
         self.destWeightFolder.parent.mkdir(parents=True, exist_ok=True)
-        tmpParent = tempfile.mkdtemp(dir=str(self.destWeightFolder.parent), prefix="dentalseg_weights_")
+        tmpParent = tempfile.mkdtemp(
+            dir=str(self.destWeightFolder.parent), prefix=WEIGHTS_STAGING_PREFIX
+        )
         backupFolder = None
         weightsCommitted = False
         try:
@@ -295,7 +302,8 @@ class PythonDependencyChecker:
             self.errorDisplay(
                 "Failed to download weights. Please retry or manually install them to proceed.\n"
                 "To manually install the weights, please refer to the documentation here :\n"
-                "https://github.com/gaudot/SlicerDentalSegmentator",
+                f"{DENTOFAC_SUPPORT_URL}\n\n"
+                f"Model source and provenance: {UPSTREAM_MODEL_URL}",
                 detailedText=traceback.format_exc()
             )
             return False

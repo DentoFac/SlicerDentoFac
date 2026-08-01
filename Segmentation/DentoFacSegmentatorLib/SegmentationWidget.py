@@ -1075,8 +1075,8 @@ class SegmentationWidget(qt.QWidget):
         if not self._measurementReport:
             return
         defaultPath = (
-            str(Path(self._lastExportFolder) / "dentalsegmentator-measurements.csv")
-            if self._lastExportFolder else "dentalsegmentator-measurements.csv"
+            str(Path(self._lastExportFolder) / "dentofac-segmentator-measurements.csv")
+            if self._lastExportFolder else "dentofac-segmentator-measurements.csv"
         )
         fileName = qt.QFileDialog.getSaveFileName(
             self, "Save measurements", defaultPath, "CSV Files (*.csv)"
@@ -1221,7 +1221,7 @@ class SegmentationWidget(qt.QWidget):
             slicer.util.infoDisplay("Copied to clipboard.")
             
         def onSave():
-            fileName = qt.QFileDialog.getSaveFileName(dialog, "Save Diagnostics", f"dentalsegmentator-diagnostics-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}.json", "JSON Files (*.json)")
+            fileName = qt.QFileDialog.getSaveFileName(dialog, "Save Diagnostics", f"dentofac-segmentator-diagnostics-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}.json", "JSON Files (*.json)")
             if fileName:
                 try:
                     with open(fileName, "w", encoding="utf-8") as f:
@@ -1233,9 +1233,9 @@ class SegmentationWidget(qt.QWidget):
         def onReport():
             import urllib.parse
             
-            # The first DentoFac release retains the pinned upstream model host as
-            # explicit provenance; Phase 2 will route DentoFac support separately.
-            repo_slug = "gaudot/SlicerDentalSegmentator"
+            # Support belongs to DentoFac. The acknowledgement and model-download
+            # diagnostics retain the upstream links as provenance.
+            repo_slug = "DentoFac/SlicerDentoFac"
             title = "Bug report: [Brief description]"
             
             body = diag.prepare_github_issue_body(textEdit.toPlainText())

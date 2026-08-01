@@ -32,6 +32,75 @@ class ModuleSettingsTestCase(unittest.TestCase):
         self.settings.setDevice("cpu")
         self.assertEqual(self.settings.getDevice(["cuda", "cpu", "mps"], "cuda"), "cpu")
 
+    def test_target_prefix_is_stable(self):
+        self.assertEqual(ModuleSettings._PREFIX, "DentoFac/Segmentation/")
+
+    def test_fresh_installation_records_schema_without_preferences(self):
+        self.assertEqual(self.backend.value(ModuleSettings.KEY_MIGRATION_VERSION), "1")
+        self.assertNotIn(ModuleSettings.KEY_DEVICE, self.backend._d)
+
+    def test_migrates_upstream_namespace_without_removing_legacy_values(self):
+        backend = FakeQSettings()
+        legacy = "DentalSegmentator/"
+        backend.setValue(legacy + "device", "cpu")
+        backend.setValue(legacy + "surfaceSmoothing", "0.25")
+        backend.setValue(legacy + "exportFormats", str(ExportFormat.STL.value))
+        backend.setValue(legacy + "gltfReductionFactor", "0.5")
+        backend.setValue(legacy + "lastExportFolder", "/legacy/export")
+
+        migrated = ModuleSettings(backend=backend)
+
+        self.assertEqual(migrated.getDevice(["cuda", "cpu"], "cuda"), "cpu")
+        self.assertAlmostEqual(migrated.getSurfaceSmoothing(0.0), 0.25)
+        self.assertEqual(migrated.getExportFormats(ExportFormat(0)), ExportFormat.STL)
+        self.assertAlmostEqual(migrated.getReductionFactor(0.0), 0.5)
+        self.assertEqual(migrated.getLastExportFolder(), "/legacy/export")
+        self.assertEqual(backend.value(legacy + "device"), "cpu")
+
+    def test_migrates_phase_one_namespace_before_upstream_namespace(self):
+        backend = FakeQSettings()
+        phaseOne = "DentoFacSegmentator/"
+        upstream = "DentalSegmentator/"
+        backend.setValue(phaseOne + "device", "cpu")
+        backend.setValue(upstream + "device", "cuda")
+
+        migrated = ModuleSettings(backend=backend)
+
+        self.assertEqual(migrated.getDevice(["cuda", "cpu"], "cuda"), "cpu")
+        self.assertEqual(backend.value(upstream + "device"), "cuda")
+
+    def test_existing_dentofac_values_win_over_both_legacy_namespaces(self):
+        backend = FakeQSettings()
+        backend.setValue(ModuleSettings.KEY_DEVICE, "mps")
+        backend.setValue("DentoFacSegmentator/device", "cpu")
+        backend.setValue("DentalSegmentator/device", "cuda")
+
+        migrated = ModuleSettings(backend=backend)
+
+        self.assertEqual(migrated.getDevice(["cuda", "cpu", "mps"], "cuda"), "mps")
+
+    def test_invalid_legacy_values_are_not_migrated(self):
+        backend = FakeQSettings()
+        backend.setValue("DentalSegmentator/surfaceSmoothing", "not-a-number")
+        backend.setValue("DentalSegmentator/exportFormats", "999")
+        backend.setValue("DentalSegmentator/gltfReductionFactor", "2.0")
+
+        migrated = ModuleSettings(backend=backend)
+
+        self.assertAlmostEqual(migrated.getSurfaceSmoothing(0.4), 0.4)
+        self.assertEqual(migrated.getExportFormats(ExportFormat.OBJ), ExportFormat.OBJ)
+        self.assertAlmostEqual(migrated.getReductionFactor(0.6), 0.6)
+
+    def test_schema_version_makes_migration_one_time(self):
+        backend = FakeQSettings()
+        backend.setValue("DentalSegmentator/device", "cpu")
+        ModuleSettings(backend=backend)
+        backend.setValue("DentoFacSegmentator/device", "cuda")
+
+        migrated = ModuleSettings(backend=backend)
+
+        self.assertEqual(migrated.getDevice(["cuda", "cpu"], "cuda"), "cpu")
+
     def test_device_default_when_unset(self):
         self.assertEqual(self.settings.getDevice(["cuda", "cpu", "mps"], "cuda"), "cuda")
 

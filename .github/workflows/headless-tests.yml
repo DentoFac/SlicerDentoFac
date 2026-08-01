@@ -26,3 +26,4 @@ jobs:
           Segmentation/Testing/PythonDependencyCheckerTestCase.py
           Segmentation/Testing/ExportManagerTestCase.py
           Segmentation/Testing/SegmentationResultProcessorTestCase.py
+          Segmentation/Testing/ModuleSettingsTestCase.py

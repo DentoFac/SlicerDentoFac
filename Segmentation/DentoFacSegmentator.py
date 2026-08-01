@@ -5,6 +5,7 @@
 import slicer
 import qt
 import ctk
+from pathlib import Path
 from slicer.ScriptedLoadableModule import *
 
 from DentoFacSegmentatorLib import SegmentationWidget
@@ -15,6 +16,9 @@ class DentoFacSegmentator(ScriptedLoadableModule):
         from slicer.i18n import tr, translate
         ScriptedLoadableModule.__init__(self, parent)
         self.parent.title = tr("DentoFac Segmentator")
+        self.parent.icon = qt.QIcon(
+            str(Path(__file__).parent / "Resources" / "Icons" / "dentofac-segmentator.svg")
+        )
         self.parent.categories = [translate("qSlicerAbstractCoreModule", "DentoFac")]
         self.parent.dependencies = ["SlicerNNUNet"]
         self.parent.contributors = [

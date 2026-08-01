@@ -7,6 +7,9 @@ import platform
 import datetime
 from typing import Dict, Any, List, Optional, Callable
 
+
+EXTENSION_NAME = "SlicerDentoFac"
+
 def tail_logs(logs: List[str], max_lines: int = 100, max_bytes: int = 16384) -> List[str]:
     """Return the tail of a log list, bounded by lines and roughly by characters."""
     if not logs:
@@ -126,7 +129,7 @@ class SupportDiagnostics:
             if hasattr(slicer.app, "extensionsManagerModel"):
                 model = slicer.app.extensionsManagerModel()
                 if model:
-                    return model.extensionVersion("SlicerDentoFac")
+                    return model.extensionVersion(EXTENSION_NAME)
         except Exception:
             pass
         return None

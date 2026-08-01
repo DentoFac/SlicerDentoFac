@@ -34,6 +34,7 @@ set(MODULE_PYTHON_SCRIPTS
 set(MODULE_PYTHON_RESOURCES
   Resources/Icons/${MODULE_NAME}.png
   Resources/Icons/${MODULE_NAME}_full_icon.png
+  Resources/Icons/dentofac-segmentator.svg
   Resources/Icons/info.png
   Resources/Icons/loading.gif
   Resources/Icons/start_icon.png

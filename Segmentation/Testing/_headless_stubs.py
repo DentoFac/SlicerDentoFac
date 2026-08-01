@@ -15,9 +15,10 @@ of truth and makes the setup order-independent: pytest imports every test module
 collection before running any test, so whichever file is collected first would otherwise
 install its own partial stub and leave the next file running against it. `install()` is:
 
-* **Headless-gated** via a real Slicer-only probe (`import ctk`), not by "is `slicer` in
+* **Headless-gated** via the initialized Slicer Qt binding (`qt.QObject`), not by "is `slicer` in
   ``sys.modules``" — the latter cannot tell a sibling test's stub from a real Slicer module,
-  which is exactly what made the per-file setup order-dependent.
+  which is exactly what made the per-file setup order-dependent.  A bare `PythonSlicer` can
+  import `ctk` without loading the Qt binding, so `ctk` alone is not enough.
 * **Additive / idempotent** — every module and attribute is created only when missing, so
   calling it from multiple files (in any order) composes, and under real Slicer it is a no-op
   because every attribute already exists.
@@ -32,10 +33,10 @@ from pathlib import Path
 
 
 def is_headless():
-    """True when running outside a Slicer application (Slicer-only ``ctk`` unavailable)."""
+    """True when the initialized Slicer Qt binding is unavailable."""
     try:
-        import ctk  # noqa: F401
-        return False
+        import qt
+        return not hasattr(qt, "QObject")
     except ImportError:
         return True
 

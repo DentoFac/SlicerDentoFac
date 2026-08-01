@@ -10,10 +10,15 @@ from unittest.mock import MagicMock, patch
 import qt
 import slicer
 
-from DentoFacSegmentator import DentoFacSegmentatorWidget
+from DentoFacSegmentator import DentoFacSegmentator, DentoFacSegmentatorWidget
 
 
 class DentoFacSegmentatorWidgetTestCase(unittest.TestCase):
+    def test_module_uses_packaged_svg_icon(self):
+        parent = MagicMock()
+        DentoFacSegmentator(parent)
+        self.assertFalse(parent.icon.isNull())
+
     def setUp(self):
         self.parent = slicer.qMRMLWidget()
         self.parent.setMRMLScene(slicer.mrmlScene)
