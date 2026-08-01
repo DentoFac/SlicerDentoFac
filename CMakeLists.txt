@@ -6,10 +6,10 @@ project(DentoFac)
 # Extension metadata
 set(EXTENSION_HOMEPAGE "https://github.com/DentoFac/SlicerDentoFac")
 set(EXTENSION_CATEGORY "Dentistry")
-set(EXTENSION_CONTRIBUTORS "DentoFac contributors")
+set(EXTENSION_CONTRIBUTORS "DentoFac contributors; Gauthier DOT (upstream DentalSegmentator)")
 set(EXTENSION_DESCRIPTION
-  "A curated, integrated set of dento-maxillo-facial workflows for 3D Slicer.")
-set(EXTENSION_DEPENDS "NA")
+  "A curated, integrated set of dento-maxillo-facial workflows for 3D Slicer, including AI dental CT and CBCT segmentation.")
+set(EXTENSION_DEPENDS "NNUNet")
 
 #-----------------------------------------------------------------------------
 find_package(Slicer REQUIRED)

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="DentoFac Segmentator">
+  <rect width="256" height="256" rx="48" fill="#0c3559"/>
+  <path d="M52 82c0-22 18-40 40-40h72c22 0 40 18 40 40v58c0 16-8 31-22 40l-30 21c-14 10-34 10-48 0l-30-21c-14-9-22-24-22-40z" fill="#f6f7f5"/>
+  <path d="M79 80h98M79 112h98M79 144h67" stroke="#0c3559" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="180" cy="170" r="35" fill="#00a6a6" stroke="#f6f7f5" stroke-width="10"/>
+  <path d="M180 150v40M160 170h40" stroke="#f6f7f5" stroke-width="10" stroke-linecap="round"/>
+</svg>
