@@ -139,8 +139,9 @@ class InstallationStatus:
         )
 
 def collect_status(device_text: str, check_online: bool = False) -> InstallationStatus:
-    from .SegmentationWidget import SegmentationWidget
     from .PythonDependencyChecker import PythonDependencyChecker
+
+    from .SegmentationWidget import SegmentationWidget
 
     # 1. NNUNet extension
     nnunet_installed = SegmentationWidget.isNNUNetModuleInstalled()

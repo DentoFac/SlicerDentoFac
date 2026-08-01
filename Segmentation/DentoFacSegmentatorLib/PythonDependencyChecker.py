@@ -289,6 +289,9 @@ class PythonDependencyChecker:
             # (which would abort inference and, via the rollback, discard valid weights).
             try:
                 self.writeDownloadInfoURL(download_url)
+                from .ModelPath import modelRoot, modelStore
+                if self.destWeightFolder == modelRoot():
+                    modelStore().write_metadata()
             except Exception:  # noqa
                 progressCallback("Warning: weights installed but failed to record version info.")
 

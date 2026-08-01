@@ -1,0 +1,70 @@
+"""Headless tests for DentoFacLib shared infrastructure."""
+
+import tempfile
+from pathlib import Path
+from unittest import mock
+
+from DentoFacLib.Diagnostics import DiagnosticsCollector, tail_logs
+from DentoFacLib.Models import (
+    DENTAL_SEGMENTATOR_MODEL, ModelStore, ValidationResult, ValidationStatus, validate_model,
+)
+from DentoFacLib.Dependencies import DependencyStatus
+
+
+def _valid_model_tree(root: Path) -> None:
+    config = root / "Dataset111_Test" / "nnUNetTrainer__nnUNetPlans__3d_fullres"
+    (config / "fold_0").mkdir(parents=True)
+    (config / "dataset.json").write_text("{}", encoding="utf-8")
+    (config / "plans.json").write_text("{}", encoding="utf-8")
+    (config / "fold_0" / "checkpoint_final.pth").write_bytes(b"test")
+
+
+def test_model_store_uses_private_versioned_cache_and_confirmed_copy():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        legacy = root / "legacy"
+        _valid_model_tree(legacy)
+        store = ModelStore(DENTAL_SEGMENTATOR_MODEL, root / "app-data")
+
+        assert "DentoFac/models" in str(store.model_root)
+        authoritative = lambda path: ValidationResult(True, "", True, path, ValidationStatus.VALID)
+        assert store.copy_validated_legacy(legacy, lambda source, target: source == legacy, authoritative)
+        assert legacy.exists()  # coexistence: a legacy source is never changed
+        assert validate_model(store.model_root).isValid
+        assert store.metadata_path().exists()
+
+
+def test_model_store_never_copies_without_confirmation_or_when_destination_exists():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        legacy = root / "legacy"
+        _valid_model_tree(legacy)
+        store = ModelStore(DENTAL_SEGMENTATOR_MODEL, root / "app-data")
+        authoritative = lambda path: ValidationResult(True, "", True, path, ValidationStatus.VALID)
+        assert not store.copy_validated_legacy(legacy, lambda *_: False, authoritative)
+        assert not store.model_root.exists()
+
+
+def test_shared_diagnostics_is_bounded_and_provider_failures_are_contained():
+    assert tail_logs(["a" * 10] * 4, max_lines=4, max_bytes=20) == ["a" * 10, "a" * 10]
+    data = DiagnosticsCollector(lambda: {"workflow": "segmentator"}).collect()
+    assert data["workflow"]["workflow"] == "segmentator"
+    failed = DiagnosticsCollector(lambda: (_ for _ in ()).throw(RuntimeError())).collect()
+    assert "collection_error" in failed["workflow"]
+
+
+def test_hub_readiness_propagates_dependency_and_model_state():
+    from DentoFacLib.Models import ValidationResult, ValidationStatus
+    from DentoFacLib import RuntimeStatus
+
+    with mock.patch.object(
+        RuntimeStatus.NNUNetDependencyService, "status",
+        return_value=DependencyStatus(True, False),
+    ), mock.patch.object(
+        RuntimeStatus, "validate_model",
+        return_value=ValidationResult(False, "missing", True, None, ValidationStatus.MISSING),
+    ):
+        readiness = RuntimeStatus.collect_segmentator_readiness()
+    assert not readiness.dependency_ready
+    assert not readiness.model_ready
+    assert "Python requirements" in readiness.summary

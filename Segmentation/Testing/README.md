@@ -4,7 +4,8 @@ Run the blocking plain-Python regression tier from the extension root:
 
 ```bash
 python -m compileall -q DentoFac Segmentation
-PYTHONPATH=Segmentation python -m pytest -q \
+PYTHONPATH=DentoFac:Segmentation python -m pytest -q \
+  DentoFac/Testing/SharedServicesTestCase.py \
   Segmentation/Testing/PythonDependencyCheckerTestCase.py \
   Segmentation/Testing/ExportManagerTestCase.py \
   Segmentation/Testing/SegmentationResultProcessorTestCase.py \
@@ -15,7 +16,7 @@ The three commands above are the required local pre-commit sequence for every
 later DentoFac Segmentator slice. The GitHub Actions workflow runs the same
 syntax and headless suite on pull requests and `main` pushes.
 
-- Headless tier: `PythonDependencyCheckerTestCase`,
+- Headless tier: `DentoFac/Testing/SharedServicesTestCase`, `PythonDependencyCheckerTestCase`,
   `SegmentationResultProcessorTestCase`, `InferenceProgressTestCase`, and
   `ModuleSettingsTestCase` (including settings migration).
 - Dual tier: `ExportManagerTestCase` runs in blocking headless CI and Slicer;

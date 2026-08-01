@@ -2,42 +2,39 @@
 # Copyright (c) 2024, Gauthier DOT
 # Adapted by DentoFac from SlicerDentalSegmentator commit 476043f00009c372f0653dc759d69e2e559ed0f4; modified from upstream.
 
-import enum
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-
-class ValidationStatus(enum.Enum):
-    VALID = "valid"
-    MISSING = "missing"
-    INVALID = "invalid"
-    FLATTENED = "flattened"
-    CHECK_UNAVAILABLE = "check-unavailable"
-
-
-@dataclass
-class ValidationResult:
-    isValid: bool
-    reason: str
-    authoritative: bool
-    configurationFolder: Optional[Path]
-    status: ValidationStatus
+from DentoFacLib.Models import (
+    DENTAL_SEGMENTATOR_MODEL,
+    ModelStore,
+    ValidationResult,
+    ValidationStatus,
+    find_configuration_folder,
+    validate_model,
+)
 
 
-EXPECTED_LAYOUT_DESCRIPTION = """Resources/ML/
-  Dataset<id>_<name>/
-    <trainer>__<plans>__<configuration>/
-      dataset.json
-      plans.json
-      fold_0/checkpoint_final.pth"""
+EXPECTED_LAYOUT_DESCRIPTION = DENTAL_SEGMENTATOR_MODEL.expected_layout
+
+
+def modelStore() -> ModelStore:
+    """The shared DentoFac cache for this workflow's descriptor."""
+    return ModelStore(DENTAL_SEGMENTATOR_MODEL)
 
 
 def modelRoot() -> Path:
-    """The Resources/ML directory (model root). Single source of the hardcoded location.
-    Replaces SegmentationWidget.nnUnetFolder()'s body."""
-    fileDir = Path(__file__).parent
-    return fileDir.joinpath("..", "Resources", "ML").resolve()
+    """The DentoFac-owned, versioned writable model cache, never package files."""
+    return modelStore().model_root
+
+
+def legacyModelRoot() -> Path:
+    """Return the old extension-relative cache for read-only, confirmed migration.
+
+    Callers must validate and copy it through ``ModelStore``; it is never used for
+    inference or modified by DentoFac.
+    """
+    return (Path(__file__).parent / ".." / "Resources" / "ML").resolve()
 
 
 def findConfigurationFolder(root: Optional[Path] = None) -> Optional[Path]:
@@ -46,23 +43,12 @@ def findConfigurationFolder(root: Optional[Path] = None) -> Optional[Path]:
     Returns None if no structurally-plausible folder is found. Pure-stdlib; reuses the
     existing rglob + lenient structural check."""
     rootPath = root or modelRoot()
-    try:
-        return next(
-            datasetPath.parent
-            for datasetPath in rootPath.rglob("dataset.json")
-            if _isNNUNetDatasetPathValid(datasetPath)
-        )
-    except StopIteration:
-        return None
+    return find_configuration_folder(rootPath)
 
 
 def _isNNUNetDatasetPathValid(datasetPath: Path) -> bool:
-    configurationFolder = datasetPath.parent
-    datasetFolder = configurationFolder.parent
-    return (
-        len(configurationFolder.name.split("__")) == 3
-        and (datasetFolder.name.startswith("Dataset") or datasetFolder.name.isdigit())
-    )
+    from DentoFacLib.Models.ModelStore import _is_nnunet_dataset_path_valid
+    return _is_nnunet_dataset_path_valid(datasetPath)
 
 
 def detectFlattenedLayout(root: Optional[Path] = None) -> bool:
@@ -94,62 +80,4 @@ def validate(root: Optional[Path] = None, folds: str = "0", parameter=None) -> V
     Note: The headless fallback only produces VALID or MISSING statuses, and cannot
     verify if model weights (plans.json, checkpoint_final.pth) are actually present.
     UI components must not trust a headless 'valid' status as proof of readiness."""
-    rootPath = root or modelRoot()
-    modelPathVal = inferenceModelPath(rootPath)
-
-    try:
-        import SlicerNNUNetLib
-        if parameter is None:
-            parameter = SlicerNNUNetLib.Parameter(folds=folds, modelPath=modelPathVal)
-        isValid, reason = parameter.isValid()
-        
-        configFolder = None
-        if isValid:
-            try:
-                configFolder = parameter._configurationFolder
-            except AttributeError:
-                pass
-        
-        if configFolder is None:
-            configFolder = findConfigurationFolder(rootPath)
-
-        if isValid:
-            status = ValidationStatus.VALID
-        else:
-            if findConfigurationFolder(rootPath) is None:
-                if detectFlattenedLayout(rootPath):
-                    status = ValidationStatus.FLATTENED
-                else:
-                    status = ValidationStatus.MISSING
-            else:
-                status = ValidationStatus.INVALID
-
-        return ValidationResult(
-            isValid=isValid,
-            reason=reason,
-            authoritative=True,
-            configurationFolder=configFolder,
-            status=status
-        )
-    except ImportError:
-        configFolder = findConfigurationFolder(rootPath)
-        if configFolder is None:
-            if detectFlattenedLayout(rootPath):
-                status = ValidationStatus.FLATTENED
-            else:
-                status = ValidationStatus.MISSING
-            return ValidationResult(
-                isValid=False,
-                reason="Lenient check failed: no valid dataset.json found",
-                authoritative=False,
-                configurationFolder=None,
-                status=status
-            )
-        else:
-            return ValidationResult(
-                isValid=True,
-                reason="",
-                authoritative=False,
-                configurationFolder=configFolder,
-                status=ValidationStatus.VALID
-            )
+    return validate_model(root or modelRoot(), folds=folds, parameter=parameter)

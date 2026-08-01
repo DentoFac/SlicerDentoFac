@@ -11,6 +11,7 @@ import slicer
 
 from .IconPath import icon, iconPath
 from .PythonDependencyChecker import PythonDependencyChecker
+from DentoFacLib.Dependencies import NNUNetDependencyService
 from .Utils import (
     createButton,
     addInCollapsibleLayout,
@@ -1465,21 +1466,19 @@ class SegmentationWidget(qt.QWidget):
             return False
 
     def _installNNUNetIfNeeded(self) -> bool:
-        from SlicerNNUNetLib import InstallLogic
-        logic = InstallLogic()
-        logic.progressInfo.connect(self.onProgressInfo)
+        service = NNUNetDependencyService()
 
         # Only surface the busy indicator when an install will actually run, so a normal
         # Apply (dependencies already present) doesn't flash it. Callers hide it again in
         # their cleanup, *after* refreshing the installation status, so the bar stays up
         # across that refresh instead of blinking out before the panel catches up.
-        if not PythonDependencyChecker.areDependenciesSatisfied():
+        if not service.status().python_requirements_installed:
             self._setInstallInProgress(
                 "Installing PyTorch and nnU-Net dependencies (~2 GB download).\n"
                 "This can take several minutes, and the bar may appear frozen while large "
                 "packages are unpacked. Please keep Slicer open."
             )
-        return logic.setupPythonRequirements()
+        return service.install_python_requirements(self.onProgressInfo)
 
     def _setInstallInProgress(self, message):
         """Show/hide the install busy indicator. Pass a message to show it, None to hide.

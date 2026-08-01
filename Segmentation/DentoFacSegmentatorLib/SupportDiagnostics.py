@@ -7,6 +7,8 @@ import platform
 import datetime
 from typing import Dict, Any, List, Optional, Callable
 
+from DentoFacLib.Diagnostics import DiagnosticsCollector
+
 
 EXTENSION_NAME = "SlicerDentoFac"
 
@@ -167,9 +169,11 @@ class SupportDiagnostics:
         return []
 
     def collect(self) -> Dict[str, Any]:
+        shared_runtime = DiagnosticsCollector().collect()
         data = {
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "platform": platform.platform(),
+            "timestamp": shared_runtime["timestamp"],
+            "platform": shared_runtime["platform"],
+            "shared_runtime": shared_runtime,
             "slicer_version": None,
             "module_version": None,
             "extension_paths": {
