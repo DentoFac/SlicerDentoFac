@@ -107,7 +107,7 @@ class SegmentationWidgetTestCase(DentoFacSegmentatorTestCase):
             self.widget.refreshInstallationStatus()
 
         self.assertTrue(self.widget.installationStatusCollapsibleButton.collapsed)
-        self.assertEqual(self.widget.installationStatusCollapsibleButton.text, "● Installation Status")
+        self.assertEqual(self.widget.installationStatusCollapsibleButton.text, "● Installation status")
         self.assertIn("#2e7d32", self.widget.installationStatusCollapsibleButton.styleSheet)
 
     def test_dependency_progress_expands_installation_status(self):
