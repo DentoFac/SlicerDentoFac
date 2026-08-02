@@ -1,6 +1,8 @@
 """Headless tests for DentoFacLib shared infrastructure."""
 
+import sys
 import tempfile
+import types
 from pathlib import Path
 from unittest import mock
 
@@ -9,7 +11,9 @@ from DentoFacLib.Models import (
     DENTAL_SEGMENTATOR_MODEL, ModelStore, ValidationResult, ValidationStatus, validate_model,
 )
 from DentoFacLib.Dependencies import DependencyStatus
-from DentoFacLib.ExtensionStatus import ExpectedExtension, evaluate_required_extensions
+from DentoFacLib.ExtensionStatus import (
+    ExpectedExtension, collect_installed_extension_revisions, evaluate_required_extensions,
+)
 
 
 def _valid_model_tree(root: Path) -> None:
@@ -153,3 +157,58 @@ def test_required_extensions_keeps_unknown_and_missing_revisions_unhealthy():
     assert unknown.rows[0].status == "version_mismatch"
     assert missing.rows[0].status == "missing"
     assert blank.rows[0].status == "version_mismatch"
+
+
+class _FakeExtensionsManager:
+    """Mimics Slicer's extensionsManagerModel: metadata is keyed 'revision'."""
+
+    def __init__(self, metadata):
+        self._metadata = metadata
+
+    def isExtensionInstalled(self, name):
+        return name in self._metadata
+
+    def extensionMetadata(self, name):
+        return self._metadata.get(name, {})
+
+
+def _with_fake_slicer(metadata):
+    slicer_stub = types.ModuleType("slicer")
+    slicer_stub.app = types.SimpleNamespace(
+        extensionsManagerModel=lambda: _FakeExtensionsManager(metadata),
+    )
+    return mock.patch.dict(sys.modules, {"slicer": slicer_stub})
+
+
+def test_collect_reads_the_revision_key_that_slicer_actually_exposes():
+    # Slicer's extensionMetadata() returns the installed SHA under 'revision';
+    # 'scmrevision' does not exist in that map.  Reading the wrong key made a
+    # correctly installed NNUNet render red on a live runtime.
+    manifest = [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])]
+    with _with_fake_slicer({"NNUNet": {"revision": "0cb736d"}}):
+        detected = collect_installed_extension_revisions(manifest)
+    assert detected == {"NNUNet": "0cb736d"}
+    assert evaluate_required_extensions(manifest, detected).all_ok
+
+
+def test_collect_falls_back_to_scmrevision_when_present():
+    manifest = [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])]
+    with _with_fake_slicer({"NNUNet": {"scmrevision": "0cb736d"}}):
+        detected = collect_installed_extension_revisions(manifest)
+    assert detected == {"NNUNet": "0cb736d"}
+
+
+def test_collect_reports_unknown_when_installed_without_a_revision():
+    manifest = [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])]
+    with _with_fake_slicer({"NNUNet": {}}):
+        detected = collect_installed_extension_revisions(manifest)
+    assert detected == {"NNUNet": "unknown"}
+    assert evaluate_required_extensions(manifest, detected).rows[0].status == "version_mismatch"
+
+
+def test_collect_reports_none_when_extension_is_not_installed():
+    manifest = [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])]
+    with _with_fake_slicer({}):
+        detected = collect_installed_extension_revisions(manifest)
+    assert detected == {"NNUNet": None}
+    assert evaluate_required_extensions(manifest, detected).rows[0].status == "missing"

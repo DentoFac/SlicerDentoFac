@@ -122,7 +122,13 @@ def collect_installed_extension_revisions(
                 if not installed:
                     continue
                 metadata = metadata_for(entry.name) if callable(metadata_for) else {}
-                revision = metadata.get("scmrevision") if hasattr(metadata, "get") else None
+                # Slicer's extensionMetadata() exposes the installed revision under
+                # the "revision" key; "scmrevision" only appears in the extension
+                # description file, not this map.  Read "revision" first and keep
+                # "scmrevision" as a cross-version fallback.
+                revision = None
+                if hasattr(metadata, "get"):
+                    revision = metadata.get("revision") or metadata.get("scmrevision")
                 # An installed extension without metadata is a version mismatch,
                 # not a false "not installed" result.
                 detected[entry.name] = revision or "unknown"
