@@ -1,5 +1,6 @@
 import qt
 import slicer
+import ctk
 from slicer.ScriptedLoadableModule import ScriptedLoadableModule, ScriptedLoadableModuleWidget
 from slicer.i18n import tr, translate
 
@@ -7,8 +8,11 @@ from DentoFacLib import (
     DENTAL_SEGMENTATOR_MODEL,
     ModelStore,
     NNUNetDependencyService,
+    EXPECTED_EXTENSIONS,
+    collect_installed_extension_revisions,
     collect_runtime_status,
     collect_segmentator_readiness,
+    evaluate_required_extensions,
 )
 
 
@@ -39,6 +43,16 @@ class DentoFacWidget(ScriptedLoadableModuleWidget):
         )
         introduction.wordWrap = True
         layout.addRow(introduction)
+
+        self.requiredExtensionsPanel = ctk.ctkCollapsibleButton()
+        self.requiredExtensionsPanelLayout = qt.QFormLayout(self.requiredExtensionsPanel)
+        self.requiredExtensionLabels = {}
+        for extension in EXPECTED_EXTENSIONS:
+            label = qt.QLabel()
+            label.wordWrap = True
+            self.requiredExtensionLabels[extension.name] = label
+            self.requiredExtensionsPanelLayout.addRow(extension.name + ":", label)
+        layout.addRow(self.requiredExtensionsPanel)
 
         self.pythonVersionLabel = qt.QLabel()
         self.slicerVersionLabel = qt.QLabel()
@@ -72,6 +86,7 @@ class DentoFacWidget(ScriptedLoadableModuleWidget):
         self.refresh()
 
     def refresh(self):
+        self.refreshRequiredExtensions()
         status = collect_runtime_status()
         self.pythonVersionLabel.text = status.python_version
         self.slicerVersionLabel.text = status.slicer_version or tr("Unavailable")
@@ -80,6 +95,59 @@ class DentoFacWidget(ScriptedLoadableModuleWidget):
         self.segmentatorStatusLabel.text = readiness.summary
         self.installDependenciesButton.setEnabled(readiness.dependency_ready is False)
         self.downloadModelButton.setEnabled(readiness.dependency_ready)
+
+    def refreshRequiredExtensions(self):
+        report = evaluate_required_extensions(
+            EXPECTED_EXTENSIONS,
+            collect_installed_extension_revisions(EXPECTED_EXTENSIONS),
+        )
+        for row in report.rows:
+            status_text = {
+                "present_ok": tr("installed version accepted"),
+                "version_mismatch": tr("installed version is not accepted"),
+                "missing": tr("not installed"),
+            }[row.status]
+            marker = "✓" if row.status == "present_ok" else "✕"
+            detected = row.detected_version or tr("not installed")
+            self.requiredExtensionLabels[row.name].text = (
+                tr("{marker} Expected: {expected}; detected: {detected} — {status}").format(
+                    marker=marker,
+                    expected=row.expected_version,
+                    detected=detected,
+                    status=status_text,
+                )
+            )
+
+        if report.all_ok:
+            self.requiredExtensionsPanel.text = tr("✓ Required extensions: all present")
+        else:
+            self.requiredExtensionsPanel.text = tr("✕ Required extensions: {count} problem(s)").format(
+                count=report.problem_count,
+            )
+        self._setRequiredExtensionsPanelAppearance(report.all_ok)
+        self._setRequiredExtensionsPanelCollapsed(report.all_ok)
+
+    def _setRequiredExtensionsPanelCollapsed(self, collapsed):
+        setter = getattr(self.requiredExtensionsPanel, "setCollapsed", None)
+        if callable(setter):
+            setter(collapsed)
+        else:
+            self.requiredExtensionsPanel.collapsed = collapsed
+
+    def _setRequiredExtensionsPanelAppearance(self, all_ok):
+        """Use a theme-relative status tint so both Slicer themes retain contrast."""
+        base = self.requiredExtensionsPanel.palette.color(qt.QPalette.Button)
+        status = qt.QColor(46, 125, 50) if all_ok else qt.QColor(198, 40, 40)
+        # A one-quarter tint preserves the active Slicer light/dark palette while
+        # making the collapsible header visibly green or red.
+        background = qt.QColor(
+            (base.red() * 3 + status.red()) // 4,
+            (base.green() * 3 + status.green()) // 4,
+            (base.blue() * 3 + status.blue()) // 4,
+        )
+        self.requiredExtensionsPanel.setStyleSheet(
+            "ctkCollapsibleButton { background-color: %s; }" % background.name(),
+        )
 
     def installDependencies(self):
         service = NNUNetDependencyService()

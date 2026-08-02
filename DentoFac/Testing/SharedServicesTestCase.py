@@ -9,6 +9,7 @@ from DentoFacLib.Models import (
     DENTAL_SEGMENTATOR_MODEL, ModelStore, ValidationResult, ValidationStatus, validate_model,
 )
 from DentoFacLib.Dependencies import DependencyStatus
+from DentoFacLib.ExtensionStatus import ExpectedExtension, evaluate_required_extensions
 
 
 def _valid_model_tree(root: Path) -> None:
@@ -68,3 +69,39 @@ def test_hub_readiness_propagates_dependency_and_model_state():
     assert not readiness.dependency_ready
     assert not readiness.model_ready
     assert "Python requirements" in readiness.summary
+
+
+def test_required_extensions_all_present_at_accepted_revision():
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", ("0cb736d",))],
+        {"NNUNet": "0cb736d"},
+    )
+    assert report.all_ok
+    assert report.rows[0].status == "present_ok"
+
+
+def test_required_extensions_marks_a_missing_extension():
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", ("0cb736d",))],
+        {"NNUNet": None},
+    )
+    assert not report.all_ok
+    assert report.rows[0].status == "missing"
+
+
+def test_required_extensions_marks_a_wrong_revision():
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", ("0cb736d",))],
+        {"NNUNet": "different-sha"},
+    )
+    assert not report.all_ok
+    assert report.rows[0].status == "version_mismatch"
+
+
+def test_required_extensions_supports_a_present_only_gate():
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "site managed", (), require_accepted_revision=False)],
+        {"NNUNet": "any-revision"},
+    )
+    assert report.all_ok
+    assert report.rows[0].status == "present_ok"
