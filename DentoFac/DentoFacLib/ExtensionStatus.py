@@ -32,6 +32,9 @@ EXPECTED_EXTENSIONS = [
 ]
 
 
+MINIMUM_GIT_SHA_PREFIX_LENGTH = 7
+
+
 @dataclass(frozen=True)
 class ExtensionStatusRow:
     name: str
@@ -50,6 +53,18 @@ class ExtensionStatusReport:
         return sum(row.status != "present_ok" for row in self.rows)
 
 
+def _revisions_match(detected_revision: str, accepted_revision: str) -> bool:
+    """Return whether two short or full Git SHAs identify the same revision."""
+    detected = detected_revision.strip().lower()
+    accepted = accepted_revision.strip().lower()
+    if not detected or not accepted:
+        return False
+    if not all(character in "0123456789abcdef" for character in detected + accepted):
+        return False
+    shorter, longer = sorted((detected, accepted), key=len)
+    return len(shorter) >= MINIMUM_GIT_SHA_PREFIX_LENGTH and longer.startswith(shorter)
+
+
 def evaluate_required_extensions(
     manifest: Iterable[ExpectedExtension], detected_revisions: Mapping[str, Optional[str]],
 ) -> ExtensionStatusReport:
@@ -65,7 +80,9 @@ def evaluate_required_extensions(
         detected = detected_revisions.get(expected.name)
         if detected is None:
             status = "missing"
-        elif not expected.require_accepted_revision or detected in expected.accepted_scmrevisions:
+        elif not expected.require_accepted_revision or any(
+            _revisions_match(detected, accepted) for accepted in expected.accepted_scmrevisions
+        ):
             status = "present_ok"
         else:
             status = "version_mismatch"

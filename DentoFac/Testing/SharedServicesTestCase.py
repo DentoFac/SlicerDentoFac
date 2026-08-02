@@ -105,3 +105,51 @@ def test_required_extensions_supports_a_present_only_gate():
     )
     assert report.all_ok
     assert report.rows[0].status == "present_ok"
+
+
+def test_required_extensions_matches_a_full_detected_sha_to_a_short_accepted_sha():
+    full_revision = "0cb736d" + "a" * 33
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])],
+        {"NNUNet": full_revision},
+    )
+    assert report.all_ok
+    assert report.rows[0].status == "present_ok"
+
+
+def test_required_extensions_matches_a_short_detected_sha_to_a_full_accepted_sha():
+    full_revision = "0cb736d" + "a" * 33
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", [full_revision])],
+        {"NNUNet": "0cb736d"},
+    )
+    assert report.all_ok
+    assert report.rows[0].status == "present_ok"
+
+
+def test_required_extensions_rejects_a_partial_prefix_collision():
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])],
+        {"NNUNet": "0cb999e"},
+    )
+    assert not report.all_ok
+    assert report.rows[0].status == "version_mismatch"
+
+
+def test_required_extensions_matches_case_insensitively():
+    report = evaluate_required_extensions(
+        [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])],
+        {"NNUNet": "0CB736D"},
+    )
+    assert report.all_ok
+    assert report.rows[0].status == "present_ok"
+
+
+def test_required_extensions_keeps_unknown_and_missing_revisions_unhealthy():
+    manifest = [ExpectedExtension("NNUNet", "0cb736d", ["0cb736d"])]
+    unknown = evaluate_required_extensions(manifest, {"NNUNet": "unknown"})
+    missing = evaluate_required_extensions(manifest, {"NNUNet": None})
+    blank = evaluate_required_extensions(manifest, {"NNUNet": "  "})
+    assert unknown.rows[0].status == "version_mismatch"
+    assert missing.rows[0].status == "missing"
+    assert blank.rows[0].status == "version_mismatch"
